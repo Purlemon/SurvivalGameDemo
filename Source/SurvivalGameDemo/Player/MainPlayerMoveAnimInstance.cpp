@@ -14,12 +14,12 @@ void UMainPlayerMoveAnimInstance::UpdateAnimationProperties()
 	if (MainPlayerRef)
 	{
 		// 得到player在平面的合速度
-		FVector PlayerSpeed = MainPlayerRef->GetVelocity();
-		FVector PlayerPlanarSpeed = FVector(PlayerSpeed.X, PlayerSpeed.Y, 0.0f);
-		MoveSpeed = PlayerPlanarSpeed.Size();
+		PlayerPlaneVelocity = MainPlayerRef->PlaneVelocity;
+		MoveSpeed = PlayerPlaneVelocity.Size();
+		PlayerRotation = MainPlayerRef->GetActorRotation();
 
 		bIsInAir = MainPlayerRef->GetMovementComponent()->IsFalling();
 
-		bTargeting = MainPlayerRef->IsTargeting();
+		MoveStatus = MainPlayerRef->GetMovementStatus();
 	}
 }

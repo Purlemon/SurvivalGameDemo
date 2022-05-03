@@ -20,10 +20,16 @@ public:
 	float MoveSpeed = 0.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation Properties")
+	FVector PlayerPlaneVelocity = FVector(0.0f);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation Properties")
+	FRotator PlayerRotation = FRotator(0.0f);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation Properties")
 	bool bIsInAir = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation Properties")
-	bool bTargeting = false;
+	EPlayerMovementStatus MoveStatus = EPlayerMovementStatus::EMPS_Stand;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Animation Properties")
 	AMainPlayer* MainPlayerRef;

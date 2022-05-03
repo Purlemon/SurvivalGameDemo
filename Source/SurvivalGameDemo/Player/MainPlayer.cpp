@@ -12,9 +12,8 @@ AMainPlayer::AMainPlayer()
 
 	CameraSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	CameraSpringArm->SetupAttachment(GetRootComponent());
-	CameraSpringArm->TargetArmLength = 300.0f;	// 悬臂长度
-	CameraSpringArm->SocketOffset = FVector(0, 70, 0);	
-	CameraSpringArm->TargetOffset = FVector(0, 0, 80);
+	CameraSpringArm->TargetArmLength = 350.0f;	// 悬臂长度
+	CameraSpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 45.0f));
 	CameraSpringArm->bUsePawnControlRotation = true;	// 设置悬臂被Controller控制转向
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -47,6 +46,7 @@ void AMainPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateMovementStatus();
 }
 
 // Called to bind functionality to input
@@ -130,12 +130,32 @@ void AMainPlayer::Turn(float Value)
 
 void AMainPlayer::Jump()
 {
-	bool LimitJump = bIsTargeting;
+	bool LimitJump = IsTargeting();
 	if (!LimitJump)
 	{
 		Super::Jump();
 	}
 }
+
+void AMainPlayer::UpdateMovementStatus()
+{
+	// TODO: crouch
+	const FVector PlayerVelocity = GetVelocity();
+	PlaneVelocity = FVector(PlayerVelocity.X, PlayerVelocity.Y, 0.0f);
+
+	if (MovemenStatus != EPlayerMovementStatus::EMPS_Target)
+	{
+		if (PlaneVelocity.Size() > 0.0f)
+		{
+			SetMovementStatus(EPlayerMovementStatus::EMPS_Jog);
+		}
+		else
+		{
+			SetMovementStatus(EPlayerMovementStatus::EMPS_Stand);
+		}
+	}
+}
+
 
 void AMainPlayer::StartTargeting()
 {
@@ -143,29 +163,30 @@ void AMainPlayer::StartTargeting()
 	if (!LimitTargeting)
 	{
 		bUseControllerRotationYaw = true;
-		FollowCamera->FieldOfView = 60.0f;
-		SetTargeting(true);
+		CameraSpringArm->SocketOffset = FVector(0, 70, 0);
+		CameraSpringArm->TargetOffset = FVector(0, 0, 80);
+		CameraSpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, -45.0f));
+		SetMovementStatus(EPlayerMovementStatus::EMPS_Target);
+		StartTargetUpdateFOV();
 	}
 }
 
 void AMainPlayer::EndTargeting()
 {
 	bUseControllerRotationYaw = false;
-	FollowCamera->FieldOfView = 90.0f;
-	SetTargeting(false);
-}
-
-void AMainPlayer::SetTargeting(bool bNewTargeting)
-{
-	bIsTargeting = bNewTargeting;
+	CameraSpringArm->SocketOffset = FVector(0, 0, 0);
+	CameraSpringArm->TargetOffset = FVector(0, 0, 0);
+	CameraSpringArm->SetRelativeLocation(FVector(0.0f, 0.0f, 45.0f));
+	SetMovementStatus(EPlayerMovementStatus::EMPS_Stand);
+	EndTargetUpdateFOV();
 }
 
 void AMainPlayer::SwitchTargeting()
 {
-	bIsTargeting ? EndTargeting() : StartTargeting();
+	IsTargeting() ? EndTargeting() : StartTargeting();
 }
 
 bool AMainPlayer::IsTargeting() const
 {
-	return bIsTargeting;
+	return MovemenStatus == EPlayerMovementStatus::EMPS_Target ? true : false;
 }

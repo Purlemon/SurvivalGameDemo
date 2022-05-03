@@ -9,6 +9,16 @@
 #include "TimerManager.h"
 #include "MainPlayer.generated.h"
 
+UENUM(BlueprintType)
+enum class EPlayerMovementStatus : uint8
+{
+	EMPS_Stand UMETA(DisplayName = "Stand"),
+	EMPS_Crouch UMETA(DisplayName = "Crouch"),
+	EMPS_Jog UMETA(DisplayName = "Jog"),
+	EMPS_Run UMETA(DisplayName = "Run"),
+	EMPS_Target UMETA(DisplayName = "Target")
+};
+
 UCLASS()
 class SURVIVALGAMEDEMO_API AMainPlayer : public ACharacter
 {
@@ -36,14 +46,25 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UCameraComponent* FollowCamera;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	EPlayerMovementStatus MovemenStatus = EPlayerMovementStatus::EMPS_Stand;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	FVector PlaneVelocity = FVector(0.0f);
+
+	// -------------------------------------
+	//		    GamePlay相关属性
+	// -------------------------------------
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player State")
 	float MaxHealth = 100.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player State")
 	float Health;
 
 protected:
-	// 移动
+	// -------------------------------------
+	//               移动
+	// -------------------------------------
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 
@@ -52,18 +73,29 @@ protected:
 
 	virtual void Jump()override;
 
-	// -------------------------------------
-	//               瞄准
-	// ------------------------------------
-	void StartTargeting();
-	void EndTargeting();
-	void SetTargeting(bool bNewTargeting);
-	void SwitchTargeting();
-
-	bool bIsTargeting = false;
+	// 每帧调用，设置MovementStatus默认值
+	void UpdateMovementStatus();
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "Main Player Settings|Camera")
+	FORCEINLINE void SetMovementStatus(EPlayerMovementStatus Status) { MovemenStatus = Status; }
+	FORCEINLINE EPlayerMovementStatus GetMovementStatus() { return MovemenStatus; }
+
+protected:
+	// -------------------------------------
+	//               瞄准
+	// -------------------------------------
+	void StartTargeting();
+	void EndTargeting();
+	void SwitchTargeting();
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Movement Status|Targeting")
 	bool IsTargeting() const;
 
+	// 瞄准改变FOV
+	UFUNCTION(BlueprintImplementableEvent, Category = "Movement Status|Targeting")
+	void StartTargetUpdateFOV();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Movement Status|Targeting")
+	void EndTargetUpdateFOV();
 };
