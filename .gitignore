@@ -33,8 +33,9 @@
 
 .vs
 Binaries/
-Config/
-Content/
+Config
+Content/*
+!Content/Demo
 DerivedDataCache/
 Intermediate/
 Saved/
