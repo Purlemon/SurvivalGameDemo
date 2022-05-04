@@ -19,6 +19,14 @@ enum class EPlayerMovementStatus : uint8
 	EMPS_Target UMETA(DisplayName = "Target")
 };
 
+UENUM(BlueprintType)
+enum class EPlayerStaminaStatus : uint8
+{
+	EPSS_Normal UMETA(DisplayName = "Normal"),
+	EPSS_Exhausted UMETA(DisplayName = "Exhausted"),
+	EPSS_ExhaustedRecovering UMETA(DisplayName = "ExhaustedRecovering")
+};
+
 UCLASS()
 class SURVIVALGAMEDEMO_API AMainPlayer : public ACharacter
 {
@@ -47,7 +55,7 @@ public:
 	UCameraComponent* FollowCamera;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
-	EPlayerMovementStatus MovemenStatus = EPlayerMovementStatus::EMPS_Stand;
+	EPlayerMovementStatus MovementStatus = EPlayerMovementStatus::EMPS_Stand;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
 	FVector PlaneVelocity = FVector(0.0f);
@@ -55,30 +63,67 @@ public:
 	// -------------------------------------
 	//		    GamePlay相关属性
 	// -------------------------------------
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player State")
-	float MaxHealth = 100.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float JogSpeed = 375.0f;	// 跑步速度
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player State")
-	float Health;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float RunSpeed = 750.0f;	// 冲刺速度
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float TargetSpeed = 150.0f;	// 瞄准速度
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	int32 MaxHealth = 100;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	int32 Health;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float MaxStamina = 200;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Player State")
+	float Stamina;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float StaminaConsumeRate = 20.0f;	// 耐力消耗速度
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float StaminaRecoverRate = 5.0f;	// 耐力回复速度
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State", meta = (ClampMin = 0.0f, ClampMax = 1.0f, UIMin = 0.0f, UIMax = 1.0f))
+	float ExhaustedStaminaRatio = 0.1f;	// 疲劳区比例
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	EPlayerStaminaStatus StaminaStatus = EPlayerStaminaStatus::EPSS_Normal;
 
 protected:
 	// -------------------------------------
 	//               移动
 	// -------------------------------------
+
+	bool bLeftShiftKeyDown = false;	// 标识左shift是否按下
+
+protected:
+
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 
 	void LookUp(float Value);
 	void Turn(float Value);
 
+	FORCEINLINE void LeftShiftKeyDown() { bLeftShiftKeyDown = true; }
+	FORCEINLINE void LeftShiftKeyUp() { bLeftShiftKeyDown = false; }
+
 	virtual void Jump()override;
 
 	// 每帧调用，设置MovementStatus默认值
-	void UpdateMovementStatus();
+	void UpdateMovementStatus(float DeltaTime);
+
+	void UpdateRunStatus(float DeltaTime);
 
 public:
-	FORCEINLINE void SetMovementStatus(EPlayerMovementStatus Status) { MovemenStatus = Status; }
-	FORCEINLINE EPlayerMovementStatus GetMovementStatus() { return MovemenStatus; }
+	FORCEINLINE void SetMovementStatus(EPlayerMovementStatus Status) { MovementStatus = Status; }
+	FORCEINLINE EPlayerMovementStatus GetMovementStatus() { return MovementStatus; }
 
 protected:
 	// -------------------------------------
@@ -98,4 +143,5 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Movement Status|Targeting")
 	void EndTargetUpdateFOV();
+	
 };
