@@ -61,6 +61,19 @@ public:
 	FVector PlaneVelocity = FVector(0.0f);
 
 	// -------------------------------------
+	//				 输入
+	// -------------------------------------
+
+	float InputX = 0.0f;
+	float InputY = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float RollingInputX = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float RollingInputY = 0.0f;
+
+	// -------------------------------------
 	//		    GamePlay相关属性
 	// -------------------------------------
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
@@ -85,6 +98,12 @@ public:
 	float Stamina;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float StaminaRollConsume = 20.0f;	// 翻滚消耗耐力
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	float StaminaSlideConsume = 20.0f;	// 滑步消耗耐力
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
 	float StaminaConsumeRate = 20.0f;	// 耐力消耗速度
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
@@ -101,7 +120,16 @@ protected:
 	//               移动
 	// -------------------------------------
 
-	bool bLeftShiftKeyDown = false;	// 标识左shift是否按下
+	FTimerHandle RollTimerHandle;	// 翻滚
+	bool bRolling = false;	
+
+	FTimerHandle SlideTimerHandle;	// 滑步
+	bool bSliding = false;	
+
+	bool bLocking = false;
+
+	FTimerHandle RunLongPressedTimerHandle;
+	bool bRunKeyDown = false;	// 标识左shift是否按下
 
 protected:
 
@@ -111,8 +139,14 @@ protected:
 	void LookUp(float Value);
 	void Turn(float Value);
 
-	FORCEINLINE void LeftShiftKeyDown() { bLeftShiftKeyDown = true; }
-	FORCEINLINE void LeftShiftKeyUp() { bLeftShiftKeyDown = false; }
+	void RunPressed();
+	void RunReleased();
+
+	FORCEINLINE void RunKeyDown() { bRunKeyDown = true; }
+	FORCEINLINE void RunKeyUp() { bRunKeyDown = false; }
+
+	void Roll();
+	void Slide();
 
 	virtual void Jump()override;
 
@@ -122,6 +156,10 @@ protected:
 	void UpdateRunStatus(float DeltaTime);
 
 public:
+	FORCEINLINE bool IsRolling() { return bRolling; }
+
+	FORCEINLINE bool IsSliding() { return bSliding; }
+
 	FORCEINLINE void SetMovementStatus(EPlayerMovementStatus Status) { MovementStatus = Status; }
 	FORCEINLINE EPlayerMovementStatus GetMovementStatus() { return MovementStatus; }
 

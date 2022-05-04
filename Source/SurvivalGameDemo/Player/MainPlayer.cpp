@@ -20,7 +20,9 @@ AMainPlayer::AMainPlayer()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraSpringArm, USpringArmComponent::SocketName);
 
-	// -----------------移动-----------------------
+	// -------------------------------------
+	//				 移动
+	// -------------------------------------
 
 	bUseControllerRotationYaw = false;	// 取消Player被Controller控制转向
 	
@@ -30,7 +32,9 @@ AMainPlayer::AMainPlayer()
 	MoveComp->bOrientRotationToMovement = true;	// 自动转身
 	MoveComp->RotationRate = FRotator(0.0f, 800.0f, 0.0f);// 转身速率
 
-	// ----------------状态------------------------
+	// -------------------------------------
+	//			GamePlay状态
+	// -------------------------------------
 
 	Health = MaxHealth;
 	Stamina = MaxStamina;
@@ -50,8 +54,6 @@ void AMainPlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UpdateMovementStatus(DeltaTime);
-
-	UE_LOG(LogTemp, Warning, TEXT("Tick"));
 }
 
 // Called to bind functionality to input
@@ -68,24 +70,27 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &AMainPlayer::LookUp);
 
 	// 冲刺
-	PlayerInputComponent->BindAction(TEXT("Running"), IE_Pressed, this, &AMainPlayer::LeftShiftKeyDown);
-	PlayerInputComponent->BindAction(TEXT("Running"), IE_Released, this, &AMainPlayer::LeftShiftKeyUp);
+	PlayerInputComponent->BindAction(TEXT("Run"), IE_Pressed, this, &AMainPlayer::RunPressed);
+	PlayerInputComponent->BindAction(TEXT("Run"), IE_Released, this, &AMainPlayer::RunReleased);
+
+	// 翻滚
+	PlayerInputComponent->BindAction(TEXT("Roll"), IE_Pressed, this, &AMainPlayer::Roll);
 
 	// 跳跃
 	PlayerInputComponent->BindAction(TEXT("Jump"), IE_Pressed, this, &AMainPlayer::Jump);
 
 	// 武器
 	// 枪械瞄准
-	PlayerInputComponent->BindAction(TEXT("Targeting"), IE_Pressed, this, &AMainPlayer::StartTargeting);
-	PlayerInputComponent->BindAction(TEXT("Targeting"), IE_Released, this, &AMainPlayer::EndTargeting);
+	PlayerInputComponent->BindAction(TEXT("Target"), IE_Pressed, this, &AMainPlayer::StartTargeting);
+	PlayerInputComponent->BindAction(TEXT("Target"), IE_Released, this, &AMainPlayer::EndTargeting);
 	PlayerInputComponent->BindAction(TEXT("LongTargeting"), IE_Pressed, this, &AMainPlayer::SwitchTargeting);
 
 }
 
 void AMainPlayer::MoveForward(float Value)
 {
-	bool bIsFalling = GetCharacterMovement()->IsFalling();
-	if ((Controller != nullptr) && (Value != 0.0f) && !bIsFalling)
+	bool bLimitMove = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding();
+	if ((Controller != nullptr) && (Value != 0.0f) && !bLimitMove)
 	{
 		// 得到Controller的旋转角
 		FRotator ControllerRotation = Controller->GetControlRotation();
@@ -97,21 +102,20 @@ void AMainPlayer::MoveForward(float Value)
 		AddMovementInput(MoveDirection, Value);
 	}
 
-	UE_LOG(LogTemp, Display, TEXT("MoveForward"));
+	InputY = Value;
 }
 
 void AMainPlayer::MoveRight(float Value)
 {
-	bool bIsFalling = GetCharacterMovement()->IsFalling();
-	if ((Controller != nullptr) && (Value != 0.0f) && !bIsFalling)
+	bool bLimitMove = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding();
+	if ((Controller != nullptr) && (Value != 0.0f) && !bLimitMove)
 	{
 		FRotator ControllerRotation = Controller->GetControlRotation();
 		FRotator MoveRotation = FRotator(0.0f, ControllerRotation.Yaw, 0.0f);
 		FVector MoveDirection = FRotationMatrix(MoveRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(MoveDirection, Value);
 	}
-
-	UE_LOG(LogTemp, Display, TEXT("MoveRight"));
+	InputX = Value;
 }
 
 void AMainPlayer::LookUp(float Value)
@@ -141,10 +145,92 @@ void AMainPlayer::Turn(float Value)
 	}
 }
 
+void AMainPlayer::RunPressed()
+{
+	// 长按冲刺
+	bool bLoop = false;
+	float LongPressedTime = 0.2f;
+	const auto StartRunning = [this]() { RunKeyDown(); };
+	GetWorldTimerManager().SetTimer(RunLongPressedTimerHandle, FTimerDelegate::CreateLambda(StartRunning), LongPressedTime, bLoop);
+}
+
+void AMainPlayer::RunReleased()
+{
+	// 长按结束冲刺，短按滑步
+	if (bRunKeyDown)
+	{
+		RunKeyUp();
+	}
+	else
+	{
+		GetWorldTimerManager().ClearTimer(RunLongPressedTimerHandle);
+		Slide();
+	}
+}
+
+void AMainPlayer::Roll()
+{
+	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding() || Stamina < StaminaRollConsume;
+	if (!bLimitRoll)
+	{
+		bool bLoop = false;
+		const auto EndRoll = [this]() { bRolling = false; };
+		// 翻滚时间自动结束
+		if (InputX + InputY)
+		{
+			if (bLocking)
+			{
+				
+			} 
+			else
+			{	// 无锁定向角色面向翻滚
+				RollingInputX = 0.0f;
+				RollingInputY = 1.0f;
+				float RollingTime = 0.7f;
+				GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndRoll), RollingTime, bLoop);
+			}
+		}
+		else  
+		{	// 原地后撤步
+			RollingInputX = 0.0f;
+			RollingInputY = 0.0f;
+			float RollingTime = 0.2f;
+			GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndRoll), RollingTime, bLoop);
+		}
+		bRolling = true;
+
+		// 退出瞄准
+		EndTargeting();
+
+		// 消耗耐力
+		Stamina -= StaminaRollConsume;
+	}
+}
+
+void AMainPlayer::Slide()
+{
+	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding() || Stamina < StaminaSlideConsume;
+	if (!bLimitRoll)
+	{
+		bool bLoop = false;
+		const auto EndSlide = [this]() { bSliding = false; };
+		float SlideTime = 0.2f;
+		GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndSlide), SlideTime, bLoop);
+		
+		bSliding = true;
+
+		// 退出瞄准
+		EndTargeting();
+
+		// 消耗耐力
+		Stamina -= StaminaSlideConsume;
+	}
+}
+
 void AMainPlayer::Jump()
 {
-	bool LimitJump = IsTargeting();
-	if (!LimitJump)
+	bool bLimitJump = IsTargeting() || IsRolling() || IsSliding();
+	if (!bLimitJump)
 	{
 		Super::Jump();
 	}
@@ -190,7 +276,7 @@ void AMainPlayer::UpdateMovementStatus(float DeltaTime)
 			{
 				SetMovementStatus(EPlayerMovementStatus::EMPS_Stand);
 
-				float StaminaRecover = StaminaRecoverRate * DeltaTime * 2;
+				float StaminaRecover = StaminaRecoverRate * DeltaTime * 4;
 				Stamina = FMath::Min(Stamina + StaminaRecover, MaxStamina);
 			}
 			break;
@@ -208,7 +294,7 @@ void AMainPlayer::UpdateRunStatus(float DeltaTime)
 	switch (StaminaStatus)
 	{
 		case EPlayerStaminaStatus::EPSS_Normal: {
-			if (bLeftShiftKeyDown)
+			if (bRunKeyDown)
 			{
 				// 冲刺消耗耐力
 				Stamina -= StaminaConsume;
@@ -226,14 +312,14 @@ void AMainPlayer::UpdateRunStatus(float DeltaTime)
 			break;
 		}
 		case EPlayerStaminaStatus::EPSS_Exhausted: {
-			if (bLeftShiftKeyDown)
+			if (bRunKeyDown)
 			{
 				// 在疲劳区继续冲刺
 				Stamina = FMath::Max(Stamina - StaminaRecover, 0.0f);
 				if (Stamina <= 0)
 				{
 					StaminaStatus = EPlayerStaminaStatus::EPSS_ExhaustedRecovering;
-					LeftShiftKeyUp();
+					RunKeyUp();
 				} 
 				else
 				{
@@ -267,8 +353,8 @@ void AMainPlayer::UpdateRunStatus(float DeltaTime)
 
 void AMainPlayer::StartTargeting()
 {
-	bool LimitTargeting = GetCharacterMovement()->IsFalling();
-	if (!LimitTargeting)
+	bool bLimitTarget = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding();
+	if (!bLimitTarget)
 	{
 		bUseControllerRotationYaw = true;
 		CameraSpringArm->SocketOffset = FVector(0, 70, 0);

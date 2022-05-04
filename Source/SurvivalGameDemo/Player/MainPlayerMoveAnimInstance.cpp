@@ -18,7 +18,12 @@ void UMainPlayerMoveAnimInstance::UpdateAnimationProperties()
 		MoveSpeed = PlayerPlaneVelocity.Size();
 		PlayerRotation = MainPlayerRef->GetActorRotation();
 
+		RollingInputX = MainPlayerRef->RollingInputX;
+		RollingInputY = MainPlayerRef->RollingInputY;
+
 		bIsInAir = MainPlayerRef->GetMovementComponent()->IsFalling();
+		bIsSliding = MainPlayerRef->IsSliding();
+		bIsRolling = MainPlayerRef->IsRolling();
 
 		MoveStatus = MainPlayerRef->GetMovementStatus();
 	}
