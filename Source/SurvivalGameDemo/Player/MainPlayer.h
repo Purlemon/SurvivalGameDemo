@@ -7,6 +7,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
+#include "Items/Weapon.h"
 #include "MainPlayer.generated.h"
 
 UENUM(BlueprintType)
@@ -115,6 +116,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
 	EPlayerStaminaStatus StaminaStatus = EPlayerStaminaStatus::EPSS_Normal;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	EWeaponType HasWeaponType = EWeaponType::EWT_None;	// 持有武器类型
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	AWeapon* EquippedWeapon;	// 装备的武器
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	AWeapon* OverlappingWeapon;	// 当前可交互的武器
+
 protected:
 	// -------------------------------------
 	//               移动
@@ -181,5 +191,11 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Movement Status|Targeting")
 	void EndTargetUpdateFOV();
+
+protected:
+	// -------------------------------------
+	//               交互
+	// ------------------------------------- 
+	void Interact();
 	
 };

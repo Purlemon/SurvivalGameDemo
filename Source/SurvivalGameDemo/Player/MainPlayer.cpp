@@ -79,6 +79,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	// ÌøÔ¾
 	PlayerInputComponent->BindAction(TEXT("Jump"), IE_Pressed, this, &AMainPlayer::Jump);
 
+	// ½»»¥
+	PlayerInputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AMainPlayer::Interact);
+
 	// ÎäÆ÷
 	// Ç¹ÐµÃé×¼
 	PlayerInputComponent->BindAction(TEXT("Target"), IE_Pressed, this, &AMainPlayer::StartTargeting);
@@ -385,4 +388,26 @@ void AMainPlayer::SwitchTargeting()
 bool AMainPlayer::IsTargeting() const
 {
 	return MovementStatus == EPlayerMovementStatus::EMPS_Target ? true : false;
+}
+
+void AMainPlayer::Interact()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Interact"));
+	if (OverlappingWeapon)	// ÔÚ½»»¥·¶Î§ÄÚ×°±¸ÐÂÎäÆ÷
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player Overlapping Weapon"));
+		if (EquippedWeapon)
+		{
+			EquippedWeapon->UnEquip(this);
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Player Equipped Weapon"));
+		OverlappingWeapon->Equip(this);
+	} 
+	else	// Ð¶ÏÂÎäÆ÷
+	{
+		if (EquippedWeapon)
+		{
+			EquippedWeapon->UnEquip(this);
+		}
+	}
 }
