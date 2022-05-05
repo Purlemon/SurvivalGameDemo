@@ -176,19 +176,21 @@ void AMainPlayer::Roll()
 		bool bLoop = false;
 		const auto EndRoll = [this]() { bRolling = false; };
 		// 翻滚时间自动结束
-		if (InputX + InputY)
+		float InputValue = InputX + InputY;
+		if (InputValue > 0.0f)
 		{
 			if (bLocking)
 			{
-				
+				RollingInputX = InputX;
+				RollingInputY = InputY;
 			} 
 			else
 			{	// 无锁定向角色面向翻滚
 				RollingInputX = 0.0f;
 				RollingInputY = 1.0f;
-				float RollingTime = 0.7f;
-				GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndRoll), RollingTime, bLoop);
 			}
+			float RollingTime = 0.7f;
+			GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndRoll), RollingTime, bLoop);
 		}
 		else  
 		{	// 原地后撤步
@@ -214,7 +216,7 @@ void AMainPlayer::Slide()
 	{
 		bool bLoop = false;
 		const auto EndSlide = [this]() { bSliding = false; };
-		float SlideTime = 0.2f;
+		float SlideTime = 0.4f;
 		GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndSlide), SlideTime, bLoop);
 		
 		bSliding = true;
