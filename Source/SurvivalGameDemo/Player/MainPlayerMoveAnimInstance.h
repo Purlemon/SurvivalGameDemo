@@ -37,6 +37,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Properties|Animation")
 	EPlayerMovementStatus MoveStatus = EPlayerMovementStatus::EMPS_Stand;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Properties|Animation")
+	EWeaponType WeaponType = EWeaponType::EWT_None;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Properties|Input")
 	float RollingInputX = 0.0f;
 

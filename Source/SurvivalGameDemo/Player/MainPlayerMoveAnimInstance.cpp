@@ -25,6 +25,7 @@ void UMainPlayerMoveAnimInstance::UpdateAnimationProperties()
 		bIsSliding = MainPlayerRef->IsSliding();
 		bIsRolling = MainPlayerRef->IsRolling();
 
+		WeaponType = MainPlayerRef->HasWeaponType;
 		MoveStatus = MainPlayerRef->GetMovementStatus();
 	}
 }
