@@ -88,7 +88,7 @@ void AWeapon::Equip(AMainPlayer* MainPlayer)
 	{
 		State = EWeaponState::EWS_Equipped;
 
-		DeactiveDisplayMeshCollision();
+		DeactiveWeaponCollision();
 
 		// 得到武器在Player骨骼上的插槽
 		const USkeletalMeshSocket* Socket = MainPlayer->GetMesh()->GetSocketByName(SocketName);
@@ -124,7 +124,7 @@ void AWeapon::UnEquip(AMainPlayer* MainPlayer)
 		{
 			State = EWeaponState::EWS_CanPickedup;
 
-			ActiveDisplayMeshCollision();
+			ActiveWeaponCollision();
 
 			// Player状态改变
 			MainPlayer->HasWeaponType = EWeaponType::EWT_None;
@@ -141,18 +141,25 @@ void AWeapon::UnEquip(AMainPlayer* MainPlayer)
 	}
 }
 
-void AWeapon::ActiveDisplayMeshCollision()
+void AWeapon::ActiveWeaponCollision()
 {
 	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Mesh->SetCollisionObjectType(ECC_WorldDynamic);
 	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	Mesh->SetSimulatePhysics(true);
+
+	TriggerSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	TriggerSphere->SetCollisionObjectType(ECC_WorldStatic);
+	TriggerSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+	TriggerSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 }
 
-void AWeapon::DeactiveDisplayMeshCollision()
+void AWeapon::DeactiveWeaponCollision()
 {
 	Mesh->SetSimulatePhysics(false);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	TriggerSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 

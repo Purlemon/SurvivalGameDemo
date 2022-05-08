@@ -77,8 +77,8 @@ protected:
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	void ActiveDisplayMeshCollision();
-	void DeactiveDisplayMeshCollision();
+	void ActiveWeaponCollision();
+	void DeactiveWeaponCollision();
 
 public:
 	void Equip(class AMainPlayer* MainPlayer);
