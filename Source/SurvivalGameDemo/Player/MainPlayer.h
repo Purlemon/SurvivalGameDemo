@@ -125,18 +125,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	AWeapon* OverlappingWeapon;	// 当前可交互的武器
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lock System")
+	bool bLocking = false;
+
 protected:
 	// -------------------------------------
 	//               移动
 	// -------------------------------------
 
 	FTimerHandle RollTimerHandle;	// 翻滚
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bRolling = false;	
 
 	FTimerHandle SlideTimerHandle;	// 滑步
 	bool bSliding = false;	
-
-	bool bLocking = false;
 
 	FTimerHandle RunLongPressedTimerHandle;
 	bool bRunKeyDown = false;	// 标识左shift是否按下

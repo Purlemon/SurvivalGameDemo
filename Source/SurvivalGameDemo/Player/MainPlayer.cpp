@@ -123,7 +123,8 @@ void AMainPlayer::MoveRight(float Value)
 
 void AMainPlayer::LookUp(float Value)
 {
-	if (Value != 0.0f)
+	bool bLimitLookUp = bLocking;
+	if (Value != 0.0f && !bLimitLookUp)
 	{
 		float ControlPitch = GetControlRotation().Pitch;
 		// 限制最大仰角
@@ -142,7 +143,8 @@ void AMainPlayer::LookUp(float Value)
 
 void AMainPlayer::Turn(float Value)
 {
-	if (Value != 0.0f)
+	bool bLimitTurn = bLocking;
+	if (Value != 0.0f && !bLimitTurn)
 	{
 		AMainPlayer::AddControllerYawInput(Value);
 	}
@@ -179,7 +181,7 @@ void AMainPlayer::Roll()
 		bool bLoop = false;
 		const auto EndRoll = [this]() { bRolling = false; };
 		// 翻滚时间自动结束
-		float InputValue = InputX + InputY;
+		float InputValue = FMath::Abs(InputX) + FMath::Abs(InputY);
 		if (InputValue > 0.0f)
 		{
 			if (bLocking)
@@ -192,7 +194,7 @@ void AMainPlayer::Roll()
 				RollingInputX = 0.0f;
 				RollingInputY = 1.0f;
 			}
-			float RollingTime = 0.7f;
+			float RollingTime = 0.6f;
 			GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndRoll), RollingTime, bLoop);
 		}
 		else  
