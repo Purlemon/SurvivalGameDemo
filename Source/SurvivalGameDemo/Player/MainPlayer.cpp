@@ -4,6 +4,9 @@
 #include "Player/MainPlayer.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Enemy/BaseEnemy.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AMainPlayer::AMainPlayer()
@@ -81,6 +84,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	// 交互
 	PlayerInputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AMainPlayer::Interact);
+
+	// 锁定
+	PlayerInputComponent->BindAction(TEXT("Lock"), IE_Pressed, this, &AMainPlayer::Lock);
 
 	// 武器
 	// 枪械瞄准
@@ -394,15 +400,12 @@ bool AMainPlayer::IsTargeting() const
 
 void AMainPlayer::Interact()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Player Interact"));
 	if (OverlappingWeapon)	// 在交互范围内装备新武器
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Player Overlapping Weapon"));
 		if (EquippedWeapon)
 		{
 			EquippedWeapon->UnEquip(this);
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Player Equipped Weapon"));
 		OverlappingWeapon->Equip(this);
 	} 
 	else	// 卸下武器
@@ -412,4 +415,124 @@ void AMainPlayer::Interact()
 			EquippedWeapon->UnEquip(this);
 		}
 	}
+}
+
+void AMainPlayer::Lock()
+{
+	if (bLocking)
+	{
+		EndLocking();
+	} 
+	else
+	{	
+		bool bHasEnemies = FindAndUpdateCanLockedEnemies();
+
+		if (bHasEnemies)
+		{
+			// 得到距离视野中线最近的敌人
+			CanLockedEnemies.ValueSort([](const FEnemyRelativePlayerInfo& A, const FEnemyRelativePlayerInfo& B) {
+				return A.AbsEnemyRelativePlayerYaw < B.AbsEnemyRelativePlayerYaw;
+				});
+			ABaseEnemy* LockedEnemy = CanLockedEnemies.begin().Key();
+			
+			{	// 检查Player和该敌人之间在一定宽度内是否有其他敌人，若有则就近锁定
+				const FVector StartLocation = GetActorLocation();
+				const FVector EndLocation = LockedEnemy->GetActorLocation();
+				float SphereRadius = 25.0f;
+				TArray<TEnumAsByte<EObjectTypeQuery>>ObjectTypes;
+				ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_Pawn));
+				bool bTraceComplex = false;
+				const TArray<AActor*> ActorsToIgnore{ LockedEnemy };
+				EDrawDebugTrace::Type DrawDebugType = EDrawDebugTrace::None;
+				FHitResult OutHit;
+				bool bIgnoreSelf = true;
+
+				UKismetSystemLibrary::SphereTraceSingleForObjects(this, StartLocation, EndLocation, SphereRadius, ObjectTypes, bTraceComplex, ActorsToIgnore, DrawDebugType, OutHit, bIgnoreSelf);
+			
+				ABaseEnemy* HitEnemy = Cast<ABaseEnemy>(OutHit.Actor);
+				if (HitEnemy)
+				{
+					LockedEnemy = HitEnemy;
+				}
+			}
+			
+			StartLocking(LockedEnemy);
+		}
+	}
+}
+
+bool AMainPlayer::FindAndUpdateCanLockedEnemies()
+{
+	CanLockedEnemies.Reset();
+
+	// 取得所有敌人
+	TArray<AActor*> OutActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABaseEnemy::StaticClass(), OutActors);
+
+	const FVector CameraLocation = FollowCamera->GetComponentLocation();
+	const FRotator RotationFromPlayer = UKismetMathLibrary::FindLookAtRotation(CameraLocation, GetActorLocation());
+
+	// 检测每个敌人是否可锁定
+	for (auto& Actor : OutActors)
+	{
+		ABaseEnemy* Enemy = Cast<ABaseEnemy>(Actor);
+		if (Enemy && IsActorInLockDistance(Enemy) && IsActorInSight(Enemy))
+		{
+			// 计算每个敌人与视野中线的夹角
+			const FRotator RotationFromEnemy = UKismetMathLibrary::FindLookAtRotation(CameraLocation, Enemy->GetActorLocation());
+			float EnemyRelativePlayerYaw = RotationFromEnemy.Yaw - RotationFromPlayer.Yaw;
+			float AbsEnemyRelativePlayerYaw = FMath::Abs(EnemyRelativePlayerYaw);
+			CanLockedEnemies.Add(Enemy, {EnemyRelativePlayerYaw, AbsEnemyRelativePlayerYaw });
+		}
+	}
+
+	return CanLockedEnemies.Num() > 0 ? true : false;
+}
+
+void AMainPlayer::StartLocking(ABaseEnemy* LockedEnemy)
+{
+	bLocking = true;
+	if (LockedEnemy)
+	{
+		CurrentLockingEnemy = LockedEnemy;
+		CurrentLockingEnemy->LockedMarkMesh->SetVisibility(true);
+	}
+}
+
+void AMainPlayer::EndLocking()
+{
+	bLocking = false;
+	if (CurrentLockingEnemy)
+	{
+		CurrentLockingEnemy->LockedMarkMesh->SetVisibility(false);
+	}
+}
+
+bool AMainPlayer::IsActorInLockDistance(AActor* OtherActor)
+{
+	return GetDistanceTo(OtherActor) <= MaxLockDistance ? true : false;
+}
+
+bool AMainPlayer::IsActorInSight(AActor* OtherActor)
+{
+	// 从角色向目标Actor发出射线，检测路上有没有障碍物
+	if (OtherActor)
+	{
+		const FVector StartLocation = GetActorLocation();	// TODO:使用相机位置做更合理的检测
+		const FVector EndLocation = OtherActor->GetActorLocation();
+		TArray<TEnumAsByte<EObjectTypeQuery>>ObjectTypes;
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+		bool bTraceComplex = false;
+		const TArray<AActor*> ActorsToIgnore{ this };
+		EDrawDebugTrace::Type DrawDebugType = EDrawDebugTrace::None;
+		FHitResult OutHit;
+		bool bIgnoreSelf = true;
+
+		bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(this, StartLocation, EndLocation, ObjectTypes, bTraceComplex, ActorsToIgnore, DrawDebugType, OutHit, bIgnoreSelf);
+		
+		return !bHit;
+	}
+
+	return false;
 }

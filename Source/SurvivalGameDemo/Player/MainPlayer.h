@@ -28,6 +28,15 @@ enum class EPlayerStaminaStatus : uint8
 	EPSS_ExhaustedRecovering UMETA(DisplayName = "ExhaustedRecovering")
 };
 
+USTRUCT()
+struct FEnemyRelativePlayerInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+	float EnemyRelativePlayerYaw;
+	float AbsEnemyRelativePlayerYaw;
+};
+
 UCLASS()
 class SURVIVALGAMEDEMO_API AMainPlayer : public ACharacter
 {
@@ -113,25 +122,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State", meta = (ClampMin = 0.0f, ClampMax = 1.0f, UIMin = 0.0f, UIMax = 1.0f))
 	float ExhaustedStaminaRatio = 0.1f;	// 疲劳区比例
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
-	EPlayerStaminaStatus StaminaStatus = EPlayerStaminaStatus::EPSS_Normal;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-	EWeaponType HasWeaponType = EWeaponType::EWT_None;	// 持有武器类型
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-	AWeapon* EquippedWeapon;	// 装备的武器
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
-	AWeapon* OverlappingWeapon;	// 当前可交互的武器
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lock System")
-	bool bLocking = false;
-
 protected:
 	// -------------------------------------
 	//               移动
 	// -------------------------------------
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	EPlayerStaminaStatus StaminaStatus = EPlayerStaminaStatus::EPSS_Normal;
 
 	FTimerHandle RollTimerHandle;	// 翻滚
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -194,10 +191,45 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Movement Status|Targeting")
 	void EndTargetUpdateFOV();
 
-protected:
+public:
 	// -------------------------------------
 	//               交互
 	// ------------------------------------- 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	EWeaponType HasWeaponType = EWeaponType::EWT_None;	// 持有武器类型
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	AWeapon* EquippedWeapon;	// 装备的武器
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	AWeapon* OverlappingWeapon;	// 当前可交互的武器
+
+protected:
+
 	void Interact();
 	
+protected:
+	// -------------------------------------
+	//             锁定系统
+	// ------------------------------------- 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lock System")
+	bool bLocking = false;
+
+	float MaxLockDistance = 1500.0f;
+
+	TMap<class ABaseEnemy*, FEnemyRelativePlayerInfo> CanLockedEnemies;
+	ABaseEnemy* CurrentLockingEnemy;
+
+protected:	
+	void Lock();
+
+	// 找到当前符合锁定条件的敌人，更新CanLockedEnemies
+	bool FindAndUpdateCanLockedEnemies();
+	void StartLocking(ABaseEnemy* LockedEnemy);
+	void EndLocking();
+
+	bool IsActorInLockDistance(AActor* OtherActor);
+	bool IsActorInSight(AActor* OtherActor);
+
 };
