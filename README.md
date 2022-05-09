@@ -93,7 +93,7 @@ First demo to learn UE4
 
   结束锁定时将摄像机的Pitch设为0，使用插值平滑过渡，对于锁定大体型敌人很友好。
 
-  ![image](https://github.com/Purlemon/SurvivalGameDemo/tree/main/Image/GIF 2022-5-9 22-34-47.gif)
+  ![image](https://github.com/Purlemon/SurvivalGameDemo/tree/main/Image/GIF2022-5-9-22-34-47.gif)
 
 - 在遍历寻找锁定敌人时以敌人为key、与视野中线相对Yaw为value将可锁定的敌人全部存在TMap中（CanLockedEnemies），切换锁定只需要对key排序，根据当前锁定敌人在key数组的索引切换上一个/下一个索引。
 
@@ -146,7 +146,7 @@ First demo to learn UE4
   }
   ```
 
-  ![image](https://github.com/Purlemon/SurvivalGameDemo/tree/main/Image/GIF 2022-5-9 22-40-03.gif)
+  ![image](https://github.com/Purlemon/SurvivalGameDemo/tree/main/Image/GIF2022-5-9-22-40-03.gif)
 
 
 
