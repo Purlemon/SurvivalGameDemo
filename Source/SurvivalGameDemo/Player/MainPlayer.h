@@ -28,14 +28,14 @@ enum class EPlayerStaminaStatus : uint8
 	EPSS_ExhaustedRecovering UMETA(DisplayName = "ExhaustedRecovering")
 };
 
-USTRUCT()
-struct FEnemyRelativePlayerInfo
-{
-	GENERATED_USTRUCT_BODY()
-
-	float EnemyRelativePlayerYaw;
-	float AbsEnemyRelativePlayerYaw;
-};
+//USTRUCT()
+//struct FEnemyRelativePlayerInfo
+//{
+//	GENERATED_USTRUCT_BODY()
+//
+//	float EnemyRelativePlayerYaw;
+//	float AbsEnemyRelativePlayerYaw;
+//};
 
 UCLASS()
 class SURVIVALGAMEDEMO_API AMainPlayer : public ACharacter
@@ -227,13 +227,17 @@ protected:
 	float MaxLockDistance = 1500.0f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Lock System")
-	TMap<class ABaseEnemy*, FEnemyRelativePlayerInfo> CanLockedEnemies;
+	TMap<class ABaseEnemy*, float> CanLockedEnemies;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lock System")
 	ABaseEnemy* CurrentLockingEnemy;
 
 protected:	
 	void Lock();
+
+	void SwitchLockedLeft();
+	void SwitchLockedRight();
+	void SwitchLocked(bool bIsLeft);
 
 	// 找到当前符合锁定条件的敌人，更新CanLockedEnemies
 	bool FindAndUpdateCanLockedEnemies();

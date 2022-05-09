@@ -89,6 +89,8 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	// 锁定
 	PlayerInputComponent->BindAction(TEXT("Lock"), IE_Pressed, this, &AMainPlayer::Lock);
+	PlayerInputComponent->BindAction(TEXT("SwitchLockedLeft"), IE_Pressed, this, &AMainPlayer::SwitchLockedLeft);
+	PlayerInputComponent->BindAction(TEXT("SwitchLockedRight"), IE_Pressed, this, &AMainPlayer::SwitchLockedRight);
 
 	// 武器
 	// 枪械瞄准
@@ -433,12 +435,13 @@ void AMainPlayer::Lock()
 
 		if (bHasEnemies)
 		{
-			// 得到距离视野中线最近的敌人
-			CanLockedEnemies.ValueSort([](const FEnemyRelativePlayerInfo& A, const FEnemyRelativePlayerInfo& B) {
-				return A.AbsEnemyRelativePlayerYaw < B.AbsEnemyRelativePlayerYaw;
-				});
-			ABaseEnemy* LockedEnemy = CanLockedEnemies.begin().Key();
-			
+			for (auto& E : CanLockedEnemies)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Enemy: %f"), E.Value);
+			}
+
+			ABaseEnemy* LockedEnemy = CurrentLockingEnemy;
+
 			{	// 检查Player和该敌人之间在一定宽度内是否有其他敌人，若有则就近锁定
 				const FVector StartLocation = GetActorLocation();
 				const FVector EndLocation = LockedEnemy->GetActorLocation();
@@ -465,6 +468,64 @@ void AMainPlayer::Lock()
 	}
 }
 
+void AMainPlayer::SwitchLockedLeft()
+{
+	SwitchLocked(true);
+}
+
+void AMainPlayer::SwitchLockedRight()
+{
+	SwitchLocked(false);
+}
+
+void AMainPlayer::SwitchLocked(bool bIsLeft)
+{
+	if (CurrentLockingEnemy && bLocking)
+	{
+		ABaseEnemy* OldLockingEnemy = CurrentLockingEnemy;
+		bool bHasEnemies = FindAndUpdateCanLockedEnemies();
+		if (bHasEnemies)
+		{
+			// 将全部敌人按照顺时针排序（视野中线从左到右）
+			CanLockedEnemies.ValueSort([](float A, float B) {
+				return A < B;
+				});
+
+			TArray<ABaseEnemy*> Enemies;
+			CanLockedEnemies.GenerateKeyArray(Enemies);
+			// 得到当前锁定敌人在全部敌人中的索引
+			int32 OldLockedEnemyIndex = Enemies.Find(OldLockingEnemy);
+
+			if (bIsLeft)
+			{
+				if (OldLockedEnemyIndex == 0)
+				{
+					CurrentLockingEnemy = Enemies[Enemies.Num() - 1];
+				}
+				else
+				{
+					CurrentLockingEnemy = Enemies[OldLockedEnemyIndex - 1];
+				}
+			} 
+			else
+			{
+				if (OldLockedEnemyIndex == Enemies.Num() - 1)
+				{
+					CurrentLockingEnemy = Enemies[0];
+				}
+				else
+				{
+					CurrentLockingEnemy = Enemies[OldLockedEnemyIndex + 1];
+				}
+			}
+
+			OldLockingEnemy->LockedMarkMesh->SetVisibility(false);
+			CurrentLockingEnemy->LockedMarkMesh->SetVisibility(true);
+		}
+	}
+	
+}
+
 bool AMainPlayer::FindAndUpdateCanLockedEnemies()
 {
 	CanLockedEnemies.Reset();
@@ -476,6 +537,8 @@ bool AMainPlayer::FindAndUpdateCanLockedEnemies()
 	const FVector CameraLocation = FollowCamera->GetComponentLocation();
 	const FRotator RotationFromPlayer = UKismetMathLibrary::FindLookAtRotation(CameraLocation, GetActorLocation());
 
+	float MinRelativeRotation = 180.0f;
+
 	// 检测每个敌人是否可锁定
 	for (auto& Actor : OutActors)
 	{
@@ -485,11 +548,18 @@ bool AMainPlayer::FindAndUpdateCanLockedEnemies()
 			// 计算每个敌人与视野中线的夹角
 			const FRotator RotationFromEnemy = UKismetMathLibrary::FindLookAtRotation(CameraLocation, Enemy->GetActorLocation());
 			float EnemyRelativePlayerYaw = RotationFromEnemy.Yaw - RotationFromPlayer.Yaw;
+			CanLockedEnemies.Add(Enemy, EnemyRelativePlayerYaw);
+
+			// 保存距离视野中线最近的敌人，作为当前锁定目标
 			float AbsEnemyRelativePlayerYaw = FMath::Abs(EnemyRelativePlayerYaw);
-			CanLockedEnemies.Add(Enemy, {EnemyRelativePlayerYaw, AbsEnemyRelativePlayerYaw });
+			if (AbsEnemyRelativePlayerYaw < MinRelativeRotation)
+			{
+				CurrentLockingEnemy = Enemy;
+				MinRelativeRotation = AbsEnemyRelativePlayerYaw;
+			}
 		}
 	}
-
+	UE_LOG(LogTemp, Warning, TEXT("Locked Enemy: %f"), MinRelativeRotation);
 	return CanLockedEnemies.Num() > 0 ? true : false;
 }
 
