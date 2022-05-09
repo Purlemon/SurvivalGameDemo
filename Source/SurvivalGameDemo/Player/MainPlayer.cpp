@@ -435,11 +435,6 @@ void AMainPlayer::Lock()
 
 		if (bHasEnemies)
 		{
-			for (auto& E : CanLockedEnemies)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Enemy: %f"), E.Value);
-			}
-
 			ABaseEnemy* LockedEnemy = CurrentLockingEnemy;
 
 			{	// 检查Player和该敌人之间在一定宽度内是否有其他敌人，若有则就近锁定
@@ -559,7 +554,6 @@ bool AMainPlayer::FindAndUpdateCanLockedEnemies()
 			}
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Locked Enemy: %f"), MinRelativeRotation);
 	return CanLockedEnemies.Num() > 0 ? true : false;
 }
 
