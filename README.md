@@ -146,9 +146,7 @@ First demo to learn UE4
   }
   ```
 
-  
-
-  ![GIF 2022-5-9 22-40-03](https://mimir-archives-pic-1305889131.cos.ap-guangzhou.myqcloud.com/202205092240640.gif)
+  ![GIF 2022-5-9 22-40-03](https://mimir-archives-pic-1305889131.cos.ap-guangzhou.myqcloud.com/202205092253383.gif)
 
 
 
