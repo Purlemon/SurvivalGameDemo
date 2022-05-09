@@ -597,7 +597,7 @@ bool AMainPlayer::IsActorInSight(AActor* OtherActor)
 		const FVector EndLocation = OtherActor->GetActorLocation();
 		TArray<TEnumAsByte<EObjectTypeQuery>>ObjectTypes;
 		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
 		bool bTraceComplex = false;
 		const TArray<AActor*> ActorsToIgnore{ this };
 		EDrawDebugTrace::Type DrawDebugType = EDrawDebugTrace::None;
