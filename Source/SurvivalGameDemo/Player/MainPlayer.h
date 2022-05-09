@@ -77,10 +77,16 @@ public:
 	float InputX = 0.0f;
 	float InputY = 0.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Input")
+	float InputLookUp = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Input")
+	float InputTurn = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Input")
 	float RollingInputX = 0.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Input")
 	float RollingInputY = 0.0f;
 
 	// -------------------------------------
@@ -176,6 +182,7 @@ protected:
 	// -------------------------------------
 	//               瞄准
 	// -------------------------------------
+
 	void StartTargeting();
 	void EndTargeting();
 	void SwitchTargeting();
@@ -213,12 +220,16 @@ protected:
 	// -------------------------------------
 	//             锁定系统
 	// ------------------------------------- 
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lock System")
 	bool bLocking = false;
 
 	float MaxLockDistance = 1500.0f;
 
+	UPROPERTY(VisibleAnywhere, Category = "Lock System")
 	TMap<class ABaseEnemy*, FEnemyRelativePlayerInfo> CanLockedEnemies;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lock System")
 	ABaseEnemy* CurrentLockingEnemy;
 
 protected:	
@@ -226,10 +237,23 @@ protected:
 
 	// 找到当前符合锁定条件的敌人，更新CanLockedEnemies
 	bool FindAndUpdateCanLockedEnemies();
+
 	void StartLocking(ABaseEnemy* LockedEnemy);
 	void EndLocking();
 
 	bool IsActorInLockDistance(AActor* OtherActor);
 	bool IsActorInSight(AActor* OtherActor);
+	
+	// 每帧调用，更新锁定状态
+	void UpdateLockingStatus(float DeltaTime);
 
+	// 锁定期间摄像机朝向敌人
+	void UpdateLockingCameraRotation(float DeltaTime);
+
+	// 锁定期间翻滚，角色朝向敌人
+	void UpdateLockingActorRotation(float DeltaTime);
+
+	// 结束锁定时重置摄像机Picth，在蓝图中实现
+	UFUNCTION(BlueprintImplementableEvent, Category = "Lock System")
+	void ResetCameraAfterEndLocking();
 };

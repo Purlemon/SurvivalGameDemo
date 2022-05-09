@@ -57,6 +57,8 @@ void AMainPlayer::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UpdateMovementStatus(DeltaTime);
+
+	UpdateLockingStatus(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -145,6 +147,7 @@ void AMainPlayer::LookUp(float Value)
 		}
 		AMainPlayer::AddControllerPitchInput(Value);
 	}
+	InputLookUp = Value;
 }
 
 void AMainPlayer::Turn(float Value)
@@ -154,6 +157,7 @@ void AMainPlayer::Turn(float Value)
 	{
 		AMainPlayer::AddControllerYawInput(Value);
 	}
+	InputTurn = Value;
 }
 
 void AMainPlayer::RunPressed()
@@ -506,6 +510,7 @@ void AMainPlayer::EndLocking()
 	{
 		CurrentLockingEnemy->LockedMarkMesh->SetVisibility(false);
 	}
+	ResetCameraAfterEndLocking();
 }
 
 bool AMainPlayer::IsActorInLockDistance(AActor* OtherActor)
@@ -536,3 +541,53 @@ bool AMainPlayer::IsActorInSight(AActor* OtherActor)
 
 	return false;
 }
+
+void AMainPlayer::UpdateLockingStatus(float DeltaTime)
+{
+	if (bLocking)
+	{
+		// 检查锁定敌人是否丢失
+		bool bStillLocking = IsActorInLockDistance(CurrentLockingEnemy) && IsActorInSight(CurrentLockingEnemy);
+		if (bStillLocking)
+		{
+			UpdateLockingCameraRotation(DeltaTime);
+			UpdateLockingActorRotation(DeltaTime);
+		}
+		else
+		{
+			EndLocking();
+		}
+	}
+}
+
+void AMainPlayer::UpdateLockingCameraRotation(float DeltaTime)
+{
+	const FRotator CurrentRotation = Controller->GetControlRotation();
+	float InterpSpeed = 10.0f;
+	const FRotator RotationFromCameraToEnemy = UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), CurrentLockingEnemy->GetActorLocation());
+	
+	// Pitch和Yaw更新，Roll保持不变
+	const FRotator TargetRotation = FRotator(RotationFromCameraToEnemy.Pitch, RotationFromCameraToEnemy.Yaw, CurrentRotation.Roll);
+
+	// 插值平滑过渡
+	const FRotator NewRotation = UKismetMathLibrary::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, InterpSpeed);
+	Controller->SetControlRotation(NewRotation);
+}
+
+void AMainPlayer::UpdateLockingActorRotation(float DeltaTime)
+{
+	if (bRolling)
+	{
+		const FRotator CurrentRotation = GetActorRotation();
+		float InterpSpeed = 5.0f;
+		const FRotator RotationFromPlayerToEnemy = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CurrentLockingEnemy->GetActorLocation());
+
+		// Yaw更新
+		const FRotator TargetRotation = FRotator(CurrentRotation.Pitch, RotationFromPlayerToEnemy.Yaw, CurrentRotation.Roll);
+
+		// 插值平滑过渡
+		const FRotator NewRotation = UKismetMathLibrary::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, InterpSpeed);
+		SetActorRotation(NewRotation);
+	}
+}
+
