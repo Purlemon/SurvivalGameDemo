@@ -92,6 +92,9 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction(TEXT("SwitchLockedLeft"), IE_Pressed, this, &AMainPlayer::SwitchLockedLeft);
 	PlayerInputComponent->BindAction(TEXT("SwitchLockedRight"), IE_Pressed, this, &AMainPlayer::SwitchLockedRight);
 
+	// 攻击
+	PlayerInputComponent->BindAction(TEXT("Attack"), IE_Pressed, this, &AMainPlayer::AttackKeyDown);
+
 	// 武器
 	// 枪械瞄准
 	PlayerInputComponent->BindAction(TEXT("Target"), IE_Pressed, this, &AMainPlayer::StartTargeting);
@@ -187,7 +190,7 @@ void AMainPlayer::RunReleased()
 
 void AMainPlayer::Roll()
 {
-	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding() || Stamina < StaminaRollConsume;
+	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding() || Stamina < StaminaRollConsume || bAttacking;
 	if (!bLimitRoll)
 	{
 		bool bLoop = false;
@@ -228,7 +231,7 @@ void AMainPlayer::Roll()
 
 void AMainPlayer::Slide()
 {
-	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding() || Stamina < StaminaSlideConsume;
+	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding() || Stamina < StaminaSlideConsume || bAttacking;
 	if (!bLimitRoll)
 	{
 		bool bLoop = false;
@@ -248,7 +251,7 @@ void AMainPlayer::Slide()
 
 void AMainPlayer::Jump()
 {
-	bool bLimitJump = IsTargeting() || IsRolling() || IsSliding();
+	bool bLimitJump = IsTargeting() || IsRolling() || IsSliding() || bAttacking;
 	if (!bLimitJump)
 	{
 		Super::Jump();
@@ -640,7 +643,7 @@ void AMainPlayer::UpdateLockingCameraRotation(float DeltaTime)
 
 void AMainPlayer::UpdateLockingActorRotation(float DeltaTime)
 {
-	if (bRolling)
+	if (bRolling || bAttacking)
 	{
 		const FRotator CurrentRotation = GetActorRotation();
 		float InterpSpeed = 5.0f;
@@ -655,3 +658,56 @@ void AMainPlayer::UpdateLockingActorRotation(float DeltaTime)
 	}
 }
 
+void AMainPlayer::AttackKeyDown()
+{
+	bAttackKeyDown = true;
+
+	// 攻击输入保存一段时间
+	bool bLoop = false;
+	const auto EndAttack = [this]() { bAttackKeyDown = false; };
+	float AttackKeyTime = 0.6f;
+	GetWorldTimerManager().SetTimer(AttackTimerHandle, FTimerDelegate::CreateLambda(EndAttack), AttackKeyTime, bLoop);
+
+	// 退出瞄准
+	EndTargeting();
+
+	if (HasWeaponType == EWeaponType::EWT_LongSword)
+	{
+		LongSwordAttack();
+	}
+}
+
+void AMainPlayer::LongSwordAttack()
+{
+	bool bLimitAttack = GetCharacterMovement()->IsFalling() || bAttacking || IsRolling() || IsSliding();
+	if (!bLimitAttack)
+	{
+		bAttacking = true;
+
+		// 获得当前骨骼的动画蓝图
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if ((AnimInstance != nullptr) && (AttackMontage != nullptr))
+		{
+			// 播放攻击蒙太奇
+			AnimInstance->Montage_Play(AttackMontage);
+			FString SectionName = FString::FromInt(++LongAttackSection);
+			AnimInstance->Montage_JumpToSection(FName(*SectionName), AttackMontage);
+		}
+	}
+}
+
+void AMainPlayer::LongSwordAttackEnd()
+{
+	if (bAttackKeyDown)
+	{
+		bAttacking = false;
+		LongAttackSection = LongAttackSection >= LongAttackMaxSection ? 0 : LongAttackSection;
+		LongSwordAttack();
+	}
+	else
+	{
+		// 重置攻击段数
+		LongAttackSection = 0;
+		bAttacking = false;
+	}
+}

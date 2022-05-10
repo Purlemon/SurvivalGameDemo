@@ -260,4 +260,29 @@ protected:
 	// 结束锁定时重置摄像机Picth，在蓝图中实现
 	UFUNCTION(BlueprintImplementableEvent, Category = "Lock System")
 	void ResetCameraAfterEndLocking();
+
+protected:
+	// -------------------------------------
+	//             攻击系统
+	// ------------------------------------- 
+
+	FTimerHandle AttackTimerHandle;	
+	bool bAttackKeyDown = false;	// 标识攻击键是否被按下
+
+	uint32 LongAttackSection = 0;	// 播放长剑攻击蒙太奇的片段
+	const uint32 LongAttackMaxSection = 4;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack System")
+	bool bAttacking = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack System")
+	UAnimMontage* AttackMontage;
+
+protected:
+	void AttackKeyDown();
+
+	void LongSwordAttack();	
+
+	UFUNCTION(BlueprintCallable)
+	void LongSwordAttackEnd();	// 攻击结束时蓝图调用
 };
