@@ -594,7 +594,6 @@ bool AMainPlayer::IsActorInSight(AActor* OtherActor)
 		const FVector EndLocation = OtherActor->GetActorLocation();
 		TArray<TEnumAsByte<EObjectTypeQuery>>ObjectTypes;
 		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
-		ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldDynamic));
 		bool bTraceComplex = false;
 		const TArray<AActor*> ActorsToIgnore{ this };
 		EDrawDebugTrace::Type DrawDebugType = EDrawDebugTrace::None;
@@ -634,7 +633,8 @@ void AMainPlayer::UpdateLockingCameraRotation(float DeltaTime)
 	const FRotator RotationFromCameraToEnemy = UKismetMathLibrary::FindLookAtRotation(FollowCamera->GetComponentLocation(), CurrentLockingEnemy->GetActorLocation());
 	
 	// Pitch和Yaw更新，Roll保持不变
-	const FRotator TargetRotation = FRotator(RotationFromCameraToEnemy.Pitch, RotationFromCameraToEnemy.Yaw, CurrentRotation.Roll);
+	float Pitch = FMath::Max(RotationFromCameraToEnemy.Pitch, -30.0f);
+	const FRotator TargetRotation = FRotator(Pitch, RotationFromCameraToEnemy.Yaw, CurrentRotation.Roll);
 
 	// 插值平滑过渡
 	const FRotator NewRotation = UKismetMathLibrary::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, InterpSpeed);
