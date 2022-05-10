@@ -147,6 +147,7 @@ void AWeapon::ActiveWeaponCollision()
 	Mesh->SetCollisionObjectType(ECC_WorldDynamic);
 	Mesh->SetCollisionResponseToAllChannels(ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	Mesh->SetSimulatePhysics(true);
 
 	TriggerSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
