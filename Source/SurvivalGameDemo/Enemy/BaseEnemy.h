@@ -44,13 +44,16 @@ public:
 	class USphereComponent* ChaseVolume;	// 触发追逐Player的体积
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy AI")
-	class USphereComponent* AttackVolume;			// 攻击范围
+	class USphereComponent* AttackVolume;	// 攻击范围
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy AI")
 	class AAIController* AIController;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy Status")
 	EEnemyMovementStatus EnemyMovementStatus = EEnemyMovementStatus::EEMS_Idle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	UAnimMontage* AttackMontage;
 
 public:
 
@@ -73,5 +76,23 @@ public:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(BlueprintCallable)
-	void MoveToTarget(class AMainPlayer* TargetPlayer);
+	void MoveToTarget(class AMainPlayer* TargetMainPlayer);
+
+protected:
+	// -------------------------------------
+	//				 攻击
+	// -------------------------------------
+
+	bool bAttackVolumeOverlapping = false;
+
+	AMainPlayer* TargetPlayer;		// 当前正在追逐的Player
+
+protected:
+	
+	virtual void Attack() {};
+
+public:
+
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();				// 攻击蒙太奇播放结束后调用
 };

@@ -6,6 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Player/MainPlayer.h"
 #include "AIController.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -88,6 +89,7 @@ void ABaseEnemy::OnChaseVolumeOverlapBegin(UPrimitiveComponent* OverlappedCompon
 		AMainPlayer* MainPlayer = Cast<AMainPlayer>(OtherActor);
 		if (MainPlayer)
 		{
+			TargetPlayer = MainPlayer;
 			MoveToTarget(MainPlayer);
 		}
 	}
@@ -101,6 +103,7 @@ void ABaseEnemy::OnChaseVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponen
 		if (MainPlayer)
 		{
 			EnemyMovementStatus = EEnemyMovementStatus::EEMS_Idle;
+			TargetPlayer = nullptr;
 			if (AIController)
 			{
 				AIController->StopMovement();
@@ -111,25 +114,58 @@ void ABaseEnemy::OnChaseVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponen
 
 void ABaseEnemy::OnAttackVolumeOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-
+	if (OtherActor)
+	{
+		AMainPlayer* MainPlayer = Cast<AMainPlayer>(OtherActor);
+		if (MainPlayer)
+		{
+			TargetPlayer = MainPlayer;
+			bAttackVolumeOverlapping = true;
+			Attack();
+		}
+	}
 }
 
 void ABaseEnemy::OnAttackVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-
+	if (OtherActor)
+	{
+		AMainPlayer* MainPlayer = Cast<AMainPlayer>(OtherActor);
+		if (MainPlayer == TargetPlayer)
+		{
+			bAttackVolumeOverlapping = false;
+		}
+	}
 }
 
-void ABaseEnemy::MoveToTarget(class AMainPlayer* TargetPlayer)
+void ABaseEnemy::MoveToTarget(AMainPlayer* TargetMainPlayer)
 {
 	EnemyMovementStatus = EEnemyMovementStatus::EEMS_MoveToTarget;
 
 	if (AIController)
 	{
 		FAIMoveRequest MoveRequest;
-		MoveRequest.SetGoalActor(TargetPlayer);		// ×·ÖðÄ¿±ê
+		MoveRequest.SetGoalActor(TargetMainPlayer);		// ×·ÖðÄ¿±ê
 		MoveRequest.SetAcceptanceRadius(10.0f);		// ×·µ½µÄ¾àÀë
 
 		AIController->MoveTo(MoveRequest);
+	}
+}
+
+void ABaseEnemy::AttackEnd()
+{
+	EnemyMovementStatus = EEnemyMovementStatus::EEMS_Idle;
+	if (bAttackVolumeOverlapping)
+	{
+		Attack();
+	}
+	else
+	{
+		// PlayerÀë¿ª¹¥»÷·¶Î§×·Öð
+		if (TargetPlayer)
+		{
+			MoveToTarget(TargetPlayer);
+		}
 	}
 }
 
