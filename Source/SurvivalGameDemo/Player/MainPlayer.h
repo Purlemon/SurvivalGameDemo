@@ -265,6 +265,7 @@ public:
 	void EndLocking();
 
 	FORCEINLINE bool IsLocking() { return bLocking; }
+	FORCEINLINE bool IsEnemyLocking(ABaseEnemy* Enemy) { return CurrentLockingEnemy == Enemy; }
 
 protected:
 	// -------------------------------------

@@ -32,6 +32,7 @@ ABaseEnemy::ABaseEnemy()
 	LockedMarkMesh->SetWorldLocation(FVector(0.0f, 0.0f, 105.0f));
 	LockedMarkMesh->SetWorldRotation(FRotator(180.0f, 0.0f, 0.0f));
 	LockedMarkMesh->SetVisibility(false);
+	LockedMarkMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	ChaseVolume = CreateDefaultSubobject<USphereComponent>(TEXT("ChaseVolume"));
 	ChaseVolume->SetupAttachment(GetRootComponent());
@@ -233,9 +234,10 @@ void ABaseEnemy::OnDie()
 	ChaseVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AttackVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HealthBar->SetVisibility(ESlateVisibility::Hidden);
 
-	if (TargetPlayer && TargetPlayer->IsLocking())
+	if (TargetPlayer && TargetPlayer->IsEnemyLocking(this))
 	{
 		TargetPlayer->EndLocking();
 	}

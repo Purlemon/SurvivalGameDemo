@@ -123,13 +123,12 @@ protected:
 
 	void UpdateHealthBar();
 
-	FORCEINLINE bool IsAlive() { return EnemyMovementStatus != EEnemyMovementStatus::EEMS_Dead; }
-
 	virtual float TakeDamage(float AcceptDamage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void OnDie();
 
 public:
+	FORCEINLINE bool IsAlive() { return EnemyMovementStatus != EEnemyMovementStatus::EEMS_Dead; }
 
 	UFUNCTION(BlueprintCallable)
 	void DeathEnd();

@@ -550,7 +550,7 @@ bool AMainPlayer::FindAndUpdateCanLockedEnemies()
 	for (auto& Actor : OutActors)
 	{
 		ABaseEnemy* Enemy = Cast<ABaseEnemy>(Actor);
-		if (Enemy && IsActorInLockDistance(Enemy) && IsActorInSight(Enemy))
+		if (Enemy && IsActorInLockDistance(Enemy) && IsActorInSight(Enemy) && Enemy->IsAlive())
 		{
 			// 计算每个敌人与视野中线的夹角
 			const FRotator RotationFromEnemy = UKismetMathLibrary::FindLookAtRotation(CameraLocation, Enemy->GetActorLocation());
