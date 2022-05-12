@@ -20,6 +20,9 @@ public:
 	float MoveSpeed = 0.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Properties|Animation")
+	float DirectionAngle = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Properties|Animation")
 	FVector PlayerPlaneVelocity = FVector(0.0f);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Properties|Animation")

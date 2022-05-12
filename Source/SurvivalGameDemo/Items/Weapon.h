@@ -13,6 +13,7 @@ enum class EWeaponType : uint8
 {
 	EWT_None UMETA(DisplayName = "None"),
 	EWT_LongSword UMETA(DisplayName = "LongSword"),
+	EWT_Katana UMETA(DisplayName = "Katana"),
 	EWT_Rifle UMETA(DisplayName = "Rifle"),
 };
 

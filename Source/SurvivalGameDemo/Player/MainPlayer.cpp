@@ -680,9 +680,20 @@ void AMainPlayer::AttackKeyDown()
 	// ÍË³öÃé×¼
 	EndTargeting();
 
-	if (HasWeaponType == EWeaponType::EWT_LongSword)
+	switch (HasWeaponType)
 	{
-		LongSwordAttack();
+		case EWeaponType::EWT_LongSword:
+		{
+			LongSwordAttack();
+			break;
+		}
+		case EWeaponType::EWT_Katana:
+		{
+			KatanaAttack();
+			break;
+		}
+		default:
+			break;
 	}
 }
 
@@ -699,7 +710,7 @@ void AMainPlayer::LongSwordAttack()
 		{
 			// ²¥·Å¹¥»÷ÃÉÌ«Ææ
 			AnimInstance->Montage_Play(AttackMontage);
-			FString SectionName = FString::FromInt(++LongAttackSection);
+			FString SectionName = FString::FromInt(++AttackSection);
 			AnimInstance->Montage_JumpToSection(FName(*SectionName), AttackMontage);
 		}
 	}
@@ -710,13 +721,68 @@ void AMainPlayer::LongSwordAttackEnd()
 	if (bAttackKeyDown)
 	{
 		bAttacking = false;
-		LongAttackSection = LongAttackSection >= LongAttackMaxSection ? 0 : LongAttackSection;
+		AttackSection = AttackSection >= LongAttackMaxSection ? 0 : AttackSection;
 		LongSwordAttack();
 	}
 	else
 	{
 		// ÖØÖÃ¹¥»÷¶ÎÊý
-		LongAttackSection = 0;
+		AttackSection = 0;
 		bAttacking = false;
+	}
+}
+
+void AMainPlayer::KatanaAttack()
+{
+	bool bLimitAttack = GetCharacterMovement()->IsFalling() || bAttacking || IsRolling() || IsSliding();
+	if (!bLimitAttack)
+	{
+		bAttacking = true;
+
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if ((AnimInstance != nullptr) && (AttackMontage != nullptr))
+		{
+			AnimInstance->Montage_Play(AttackMontage);
+			FString SectionName = FString::FromInt(++AttackSection);
+			AnimInstance->Montage_JumpToSection(FName(*SectionName), AttackMontage);
+		}
+	}
+}
+
+void AMainPlayer::KatanaAttackEnd()
+{
+	if (bAttackKeyDown)
+	{
+		bAttacking = false;
+		AttackSection = AttackSection >= KatanaMaxSection ? 0 : AttackSection;
+		KatanaAttack();
+	}
+	else
+	{
+		// ÖØÖÃ¹¥»÷¶ÎÊý
+		AttackSection = 0;
+		bAttacking = false;
+	}
+}
+
+void AMainPlayer::UpdateAttackMontage(EWeaponType WeaponType)
+{
+	switch (WeaponType)
+	{
+		case EWeaponType::EWT_LongSword:
+		{
+			AttackMontage = LongSwordAttackMontage;
+			break;
+		}
+		case EWeaponType::EWT_Katana:
+		{
+			AttackMontage = KatanaAttackMontage;
+			break;
+		}
+		default:
+		{
+			AttackMontage = nullptr;
+			break;
+		}
 	}
 }

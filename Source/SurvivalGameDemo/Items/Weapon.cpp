@@ -113,6 +113,7 @@ void AWeapon::Equip(AMainPlayer* MainPlayer)
 			MainPlayer->HasWeaponType = Type;
 			MainPlayer->EquippedWeapon = this;
 			MainPlayer->OverlappingWeapon = nullptr;
+			MainPlayer->UpdateAttackMontage(Type);
 
 			// ÎäÆ÷×´Ì¬¸Ä±ä
 			bNeedRotate = false;

@@ -275,14 +275,22 @@ protected:
 	FTimerHandle AttackTimerHandle;	
 	bool bAttackKeyDown = false;	// 标识攻击键是否被按下
 
-	uint32 LongAttackSection = 0;	// 播放长剑攻击蒙太奇的片段
+	uint32 AttackSection = 0;	// 播放攻击蒙太奇的片段
 	const uint32 LongAttackMaxSection = 4;
+	const uint32 KatanaMaxSection = 4;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack System")
 	bool bAttacking = false;
 
+	// 内部使用，根据武器类型更换
+	UAnimMontage* AttackMontage;	
+
+	// 外部指定
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack System")
-	UAnimMontage* AttackMontage;
+	UAnimMontage* LongSwordAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack System")
+	UAnimMontage* KatanaAttackMontage;
 
 protected:
 	void AttackKeyDown();
@@ -291,4 +299,12 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void LongSwordAttackEnd();	// 攻击结束时蓝图调用
+
+	void KatanaAttack();
+
+	UFUNCTION(BlueprintCallable)
+	void KatanaAttackEnd();	// 攻击结束时蓝图调用
+
+public:
+	void UpdateAttackMontage(EWeaponType WeaponType);
 };

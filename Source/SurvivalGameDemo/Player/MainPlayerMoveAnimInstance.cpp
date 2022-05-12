@@ -18,6 +18,8 @@ void UMainPlayerMoveAnimInstance::UpdateAnimationProperties()
 		MoveSpeed = PlayerPlaneVelocity.Size();
 		PlayerRotation = MainPlayerRef->GetActorRotation();
 
+		DirectionAngle = CalculateDirection(PlayerPlaneVelocity, MainPlayerRef->GetActorRotation());
+
 		RollingInputX = MainPlayerRef->RollingInputX;
 		RollingInputY = MainPlayerRef->RollingInputY;
 
