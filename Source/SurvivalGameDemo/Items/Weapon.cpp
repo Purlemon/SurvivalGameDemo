@@ -6,6 +6,8 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/BoxComponent.h"
+#include "Enemy/BaseEnemy.h"
 
 // Sets default values
 AWeapon::AWeapon()
@@ -30,6 +32,12 @@ AWeapon::AWeapon()
 	TriggerSphere->SetCollisionObjectType(ECC_WorldStatic);
 	TriggerSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	TriggerSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+
+	// 将攻击box附着在武器上的socket，根据socket名字索引
+	const FName HitBoxSocketName = FName(TEXT("HitBoxSocket"));
+	HitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("HitBox"));
+	HitBox->SetupAttachment(Mesh, HitBoxSocketName);
+	DeactiveHitBox();
 }
 
 // Called when the game starts or when spawned
@@ -39,6 +47,9 @@ void AWeapon::BeginPlay()
 	
 	TriggerSphere->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnOverlapBegin);
 	TriggerSphere->OnComponentEndOverlap.AddDynamic(this, &AWeapon::OnOverlapEnd);
+
+	HitBox->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnHitBoxOverlapBegin);
+	HitBox->OnComponentEndOverlap.AddDynamic(this, &AWeapon::OnHitBoxOverlapEnd);
 }
 
 // Called every frame
@@ -87,6 +98,7 @@ void AWeapon::Equip(AMainPlayer* MainPlayer)
 	if (MainPlayer)
 	{
 		State = EWeaponState::EWS_Equipped;
+		WeaponOwner = MainPlayer->GetController();
 
 		DeactiveWeaponCollision();
 
@@ -123,6 +135,7 @@ void AWeapon::UnEquip(AMainPlayer* MainPlayer)
 		if (!bLimitUnEquip)
 		{
 			State = EWeaponState::EWS_CanPickedup;
+			WeaponOwner = nullptr;
 
 			ActiveWeaponCollision();
 
@@ -162,5 +175,39 @@ void AWeapon::DeactiveWeaponCollision()
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	TriggerSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AWeapon::OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor)
+	{
+		ABaseEnemy* BaseEnemy = Cast<ABaseEnemy>(OtherActor);
+		if (BaseEnemy)
+		{
+			// 对敌人造成伤害
+			if (DamageTypeClass)
+			{
+				UGameplayStatics::ApplyDamage(BaseEnemy, DamageValue, WeaponOwner, this, DamageTypeClass);
+			}
+		}
+	}
+}
+
+void AWeapon::OnHitBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+
+}
+
+void AWeapon::ActiveHitBox()
+{
+	HitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	HitBox->SetCollisionObjectType(ECC_WorldDynamic);
+	HitBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+	HitBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+}
+
+void AWeapon::DeactiveHitBox()
+{
+	HitBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 

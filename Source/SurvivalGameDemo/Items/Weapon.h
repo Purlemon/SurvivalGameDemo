@@ -83,4 +83,41 @@ protected:
 public:
 	void Equip(class AMainPlayer* MainPlayer);
 	void UnEquip(AMainPlayer* MainPlayer);
+
+public:
+	// -------------------------------------
+	//				ÉËº¦
+	// -------------------------------------
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Attack")
+	class UBoxComponent* HitBox;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Attack")
+	float DamageValue = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Attack")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Attack")
+	class AController* WeaponOwner;
+
+protected:
+
+	UFUNCTION()
+	void OnHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnHitBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+public:
+
+	// ½öÔÚ¹¥»÷Ê±¿ªÆôÅö×²Ìå¼ì²â
+	UFUNCTION(BlueprintCallable)
+	void ActiveHitBox();
+
+	UFUNCTION(BlueprintCallable)
+	void DeactiveHitBox();
+
 };
