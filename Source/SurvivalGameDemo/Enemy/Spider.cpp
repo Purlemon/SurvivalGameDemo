@@ -19,7 +19,9 @@ void ASpider::Attack()
 	// Í£Ö¹ÒÆ¶¯
 	AIController->StopMovement();
 
-	if (EnemyMovementStatus != EEnemyMovementStatus::EEMS_Attacking)
+	bool bLimitAttack = EnemyMovementStatus == EEnemyMovementStatus::EEMS_Attacking || !IsAlive();
+
+	if (!bLimitAttack)
 	{
 		EnemyMovementStatus = EEnemyMovementStatus::EEMS_Attacking;
 

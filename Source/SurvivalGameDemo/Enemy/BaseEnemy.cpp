@@ -109,7 +109,7 @@ void ABaseEnemy::OnChaseVolumeOverlapBegin(UPrimitiveComponent* OverlappedCompon
 	if (OtherActor)
 	{
 		AMainPlayer* MainPlayer = Cast<AMainPlayer>(OtherActor);
-		if (MainPlayer)
+		if (MainPlayer && IsAlive())
 		{
 			TargetPlayer = MainPlayer;
 			MoveToTarget(MainPlayer);
@@ -127,7 +127,7 @@ void ABaseEnemy::OnChaseVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponen
 	if (OtherActor)
 	{
 		AMainPlayer* MainPlayer = Cast<AMainPlayer>(OtherActor);
-		if (MainPlayer)
+		if (MainPlayer && IsAlive())
 		{
 			EnemyMovementStatus = EEnemyMovementStatus::EEMS_Idle;
 			TargetPlayer = nullptr;
@@ -146,7 +146,7 @@ void ABaseEnemy::OnChaseVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponen
 
 void ABaseEnemy::OnAttackVolumeOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor)
+	if (OtherActor && IsAlive())
 	{
 		AMainPlayer* MainPlayer = Cast<AMainPlayer>(OtherActor);
 		if (MainPlayer)
@@ -160,7 +160,7 @@ void ABaseEnemy::OnAttackVolumeOverlapBegin(UPrimitiveComponent* OverlappedCompo
 
 void ABaseEnemy::OnAttackVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (OtherActor)
+	if (OtherActor && IsAlive())
 	{
 		AMainPlayer* MainPlayer = Cast<AMainPlayer>(OtherActor);
 		if (MainPlayer == TargetPlayer)
@@ -186,17 +186,20 @@ void ABaseEnemy::MoveToTarget(AMainPlayer* TargetMainPlayer)
 
 void ABaseEnemy::AttackEnd()
 {
-	EnemyMovementStatus = EEnemyMovementStatus::EEMS_Idle;
-	if (bAttackVolumeOverlapping)
+	if (IsAlive())
 	{
-		Attack();
-	}
-	else
-	{
-		// PlayerÀë¿ª¹¥»÷·¶Î§×·Öð
-		if (TargetPlayer)
+		EnemyMovementStatus = EEnemyMovementStatus::EEMS_Idle;
+		if (bAttackVolumeOverlapping)
 		{
-			MoveToTarget(TargetPlayer);
+			Attack();
+		}
+		else
+		{
+			// PlayerÀë¿ª¹¥»÷·¶Î§×·Öð
+			if (TargetPlayer)
+			{
+				MoveToTarget(TargetPlayer);
+			}
 		}
 	}
 }
@@ -208,5 +211,45 @@ void ABaseEnemy::UpdateHealthBar()
 		float HealthPercent = Health / MaxHealth;
 		HealthBar->SetPercent(HealthPercent);
 	}
+}
+
+float ABaseEnemy::TakeDamage(float AcceptDamage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float CurrentHealth = Health - AcceptDamage;
+	if (CurrentHealth <= 0.0f)
+	{
+		OnDie();
+	}
+	Health = FMath::Clamp(CurrentHealth, 0.0f, MaxHealth);
+	UpdateHealthBar();
+
+	return Health;
+}
+
+void ABaseEnemy::OnDie()
+{
+	EnemyMovementStatus = EEnemyMovementStatus::EEMS_Dead;
+
+	ChaseVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HealthBar->SetVisibility(ESlateVisibility::Hidden);
+
+	if (TargetPlayer && TargetPlayer->IsLocking())
+	{
+		TargetPlayer->EndLocking();
+	}
+}
+
+void ABaseEnemy::DeathEnd()
+{
+	GetMesh()->bPauseAnims = true;
+	GetMesh()->bNoSkeletonUpdate = true;
+
+	FTimerHandle DeathTimerHandle;
+	const auto DeathAndDestroy = [this]() { Destroy(); };
+	float DelayTime = 1.0f;
+	bool bLoop = false;
+	GetWorldTimerManager().SetTimer(DeathTimerHandle, FTimerDelegate::CreateLambda(DeathAndDestroy), DelayTime, bLoop);
 }
 

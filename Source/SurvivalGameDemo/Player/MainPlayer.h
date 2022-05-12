@@ -244,9 +244,6 @@ protected:
 	// 找到当前符合锁定条件的敌人，更新CanLockedEnemies
 	bool FindAndUpdateCanLockedEnemies();
 
-	void StartLocking(ABaseEnemy* LockedEnemy);
-	void EndLocking();
-
 	bool IsActorInLockDistance(AActor* OtherActor);
 	bool IsActorInSight(AActor* OtherActor);
 	
@@ -262,6 +259,12 @@ protected:
 	// 结束锁定时重置摄像机Picth，在蓝图中实现
 	UFUNCTION(BlueprintImplementableEvent, Category = "Lock System")
 	void ResetCameraAfterEndLocking();
+
+	void StartLocking(ABaseEnemy* LockedEnemy);
+public:
+	void EndLocking();
+
+	FORCEINLINE bool IsLocking() { return bLocking; }
 
 protected:
 	// -------------------------------------

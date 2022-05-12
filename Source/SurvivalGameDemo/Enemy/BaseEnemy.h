@@ -68,10 +68,10 @@ public:
 	float MaxMoveSpeed = 150.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Status")
-	int32 MaxHealth = 100;
+	float MaxHealth = 100.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Status")
-	int32 Health;
+	float Health;
 
 public:
 	// -------------------------------------
@@ -122,4 +122,15 @@ protected:
 	// -------------------------------------
 
 	void UpdateHealthBar();
+
+	FORCEINLINE bool IsAlive() { return EnemyMovementStatus != EEnemyMovementStatus::EEMS_Dead; }
+
+	virtual float TakeDamage(float AcceptDamage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+	void OnDie();
+
+public:
+
+	UFUNCTION(BlueprintCallable)
+	void DeathEnd();
 };
