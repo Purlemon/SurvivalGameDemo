@@ -49,14 +49,34 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy AI")
 	class AAIController* AIController;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy Attack")
+	UAnimMontage* AttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Widget")
+	class UWidgetComponent* HealthBarWidgetComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Widget")
+	class UProgressBar* HealthBar;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy Status")
 	EEnemyMovementStatus EnemyMovementStatus = EEnemyMovementStatus::EEMS_Idle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	UAnimMontage* AttackMontage;
+	// -------------------------------------
+	//		    GamePlay相关属性
+	// -------------------------------------
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Status")
+	float MaxMoveSpeed = 150.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Status")
+	int32 MaxHealth = 100;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Status")
+	int32 Health;
 
 public:
-
+	// -------------------------------------
+	//				 移动
+	// -------------------------------------
 	UFUNCTION()
 	void OnChaseVolumeOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
@@ -64,15 +84,6 @@ public:
 
 	UFUNCTION()
 	void OnChaseVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	UFUNCTION()
-	void OnAttackVolumeOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-		bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnAttackVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(BlueprintCallable)
@@ -88,11 +99,27 @@ protected:
 	AMainPlayer* TargetPlayer;		// 当前正在追逐的Player
 
 protected:
-	
+
+	UFUNCTION()
+	void OnAttackVolumeOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+		bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnAttackVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 	virtual void Attack() {};
 
 public:
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();				// 攻击蒙太奇播放结束后调用
+
+protected:
+	// -------------------------------------
+	//				 伤害
+	// -------------------------------------
+
+	void UpdateHealthBar();
 };

@@ -10,6 +10,8 @@ ASpider::ASpider()
 	LockedMarkMesh->SetWorldLocation(FVector(0.0f, 0.0f, 70.0f));
 	
 	GetCharacterMovement()->MaxWalkSpeed = 150.0f;
+
+	MaxHealth = 10;
 }
 
 void ASpider::Attack()

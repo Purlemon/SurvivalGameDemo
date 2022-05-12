@@ -7,6 +7,9 @@
 #include "Player/MainPlayer.h"
 #include "AIController.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/WidgetComponent.h"
+#include "Components/ProgressBar.h"
+#include "Blueprint/UserWidget.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -45,6 +48,11 @@ ABaseEnemy::ABaseEnemy()
 	AttackVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
 	AttackVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
+	HealthBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidgetComponent"));
+	HealthBarWidgetComponent->SetupAttachment(GetRootComponent());
+	HealthBarWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);	
+	HealthBarWidgetComponent->SetDrawSize(FVector2D(200.0f, 20.0f));
+
 	// 防止挡住摄像机
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
@@ -66,6 +74,20 @@ void ABaseEnemy::BeginPlay()
 
 	// 拿到自动创建的AIController
 	AIController = Cast<AAIController>(GetController());
+
+	// 拿到自指定的HealthBar
+	UUserWidget* HealthBarWidget = HealthBarWidgetComponent->GetUserWidgetObject();
+	if (HealthBarWidget)
+	{
+		HealthBar = Cast<UProgressBar>(HealthBarWidget->GetWidgetFromName(TEXT("HealthBar")));
+		if (HealthBar)
+		{
+			HealthBar->Percent = 1.0f;
+			HealthBar->SetVisibility(ESlateVisibility::Hidden);
+		}
+	}
+
+	Health = MaxHealth;
 }
 
 // Called every frame
@@ -91,6 +113,11 @@ void ABaseEnemy::OnChaseVolumeOverlapBegin(UPrimitiveComponent* OverlappedCompon
 		{
 			TargetPlayer = MainPlayer;
 			MoveToTarget(MainPlayer);
+
+			if (HealthBar)
+			{
+				HealthBar->SetVisibility(ESlateVisibility::Visible);
+			}
 		}
 	}
 }
@@ -107,6 +134,11 @@ void ABaseEnemy::OnChaseVolumeOverlapEnd(UPrimitiveComponent* OverlappedComponen
 			if (AIController)
 			{
 				AIController->StopMovement();
+			}
+
+			if (HealthBar)
+			{
+				HealthBar->SetVisibility(ESlateVisibility::Hidden);
 			}
 		}
 	}
@@ -166,6 +198,15 @@ void ABaseEnemy::AttackEnd()
 		{
 			MoveToTarget(TargetPlayer);
 		}
+	}
+}
+
+void ABaseEnemy::UpdateHealthBar()
+{
+	if (HealthBar)
+	{
+		float HealthPercent = Health / MaxHealth;
+		HealthBar->SetPercent(HealthPercent);
 	}
 }
 
