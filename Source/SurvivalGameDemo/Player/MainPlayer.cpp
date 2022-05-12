@@ -190,12 +190,20 @@ void AMainPlayer::RunReleased()
 
 void AMainPlayer::Roll()
 {
-	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || IsSliding() || Stamina < StaminaRollConsume || bAttacking;
+	bool bLimitRoll = GetCharacterMovement()->IsFalling() || IsRolling() || bInRollCd || IsSliding() || Stamina < StaminaRollConsume || bAttacking;
 	if (!bLimitRoll)
 	{
 		bool bLoop = false;
-		const auto EndRoll = [this]() { bRolling = false; };
+
 		// 翻滚时间自动结束
+		const auto EndRoll = [this]() 
+		{ 
+			bRolling = false; 
+			FTimerHandle RollCdHandle;
+			const auto EndRollCd = [this]() { bInRollCd = false; };
+			GetWorldTimerManager().SetTimer(RollCdHandle, FTimerDelegate::CreateLambda(EndRollCd), 0.2f, false);
+		};
+		
 		float InputValue = FMath::Abs(InputX) + FMath::Abs(InputY);
 		if (InputValue > 0.0f)
 		{
@@ -220,6 +228,7 @@ void AMainPlayer::Roll()
 			GetWorldTimerManager().SetTimer(RollTimerHandle, FTimerDelegate::CreateLambda(EndRoll), RollingTime, bLoop);
 		}
 		bRolling = true;
+		bInRollCd = true;
 
 		// 退出瞄准
 		EndTargeting();

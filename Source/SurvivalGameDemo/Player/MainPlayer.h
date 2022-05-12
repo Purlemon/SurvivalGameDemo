@@ -139,6 +139,7 @@ protected:
 	FTimerHandle RollTimerHandle;	// ·­¹ö
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool bRolling = false;	
+	bool bInRollCd = false;
 
 	FTimerHandle SlideTimerHandle;	// »¬²½
 	bool bSliding = false;	
@@ -161,6 +162,7 @@ protected:
 	FORCEINLINE void RunKeyUp() { bRunKeyDown = false; }
 
 	void Roll();
+
 	void Slide();
 
 	virtual void Jump()override;
